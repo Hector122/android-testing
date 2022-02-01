@@ -3,6 +3,8 @@ package com.example.android.architecture.blueprints.todoapp.tasks
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.android.architecture.blueprints.todoapp.data.Task
+import com.example.android.architecture.blueprints.todoapp.data.source.FakeTestRepository
 import com.example.android.architecture.blueprints.todoapp.getOrAwaitValue
 import org.hamcrest.core.Is.`is`
 import org.hamcrest.core.IsNot.not
@@ -13,12 +15,15 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
+//@RunWith(AndroidJUnit4::class) Because you are no longer using the AndroidX Test
 class TasksViewModelTest {
     //When you have repeated setup code like this shared between all tests,
     // you can use the @Before annotation to create a setup method and remove repeated code.
     // Since all of these tests are going to test the TasksViewModel and will need a view model,
     // it's safe to move this code to a @Before block.
+    
+    // Use a fake repository to be injected into the viewmodel
+    private lateinit var tasksRepository: FakeTestRepository
     
     // Subject under test
     private lateinit var tasksViewModel: TasksViewModel
@@ -28,7 +33,15 @@ class TasksViewModelTest {
     
     @Before
     fun setUpViewModel() {
-        tasksViewModel = TasksViewModel(ApplicationProvider.getApplicationContext())
+        // We initialise the tasks to 3, with one active and two completed
+        tasksRepository = FakeTestRepository()
+        val task1 = Task("Title1", "Description1")
+        val task2 = Task("Title2", "Description2", true)
+        val task3 = Task("Title3", "Description3", true)
+        
+        tasksRepository.addTask(task1, task2, task3)
+        
+        tasksViewModel = TasksViewModel(tasksRepository)
     }
     
     @Test

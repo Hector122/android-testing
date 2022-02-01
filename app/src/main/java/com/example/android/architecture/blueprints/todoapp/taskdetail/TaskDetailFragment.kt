@@ -28,6 +28,9 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.example.android.architecture.blueprints.todoapp.EventObserver
 import com.example.android.architecture.blueprints.todoapp.R
+import com.example.android.architecture.blueprints.todoapp.TodoApplication
+import com.example.android.architecture.blueprints.todoapp.data.source.DefaultTasksRepository
+import com.example.android.architecture.blueprints.todoapp.data.source.TasksRepository
 import com.example.android.architecture.blueprints.todoapp.databinding.TaskdetailFragBinding
 import com.example.android.architecture.blueprints.todoapp.tasks.DELETE_RESULT_OK
 import com.example.android.architecture.blueprints.todoapp.util.setupRefreshLayout
@@ -39,11 +42,14 @@ import com.google.android.material.snackbar.Snackbar
  */
 class TaskDetailFragment : Fragment() {
     private lateinit var viewDataBinding: TaskdetailFragBinding
-
+    
     private val args: TaskDetailFragmentArgs by navArgs()
-
-    private val viewModel by viewModels<TaskDetailViewModel>()
-
+    
+    private val viewModel by viewModels<TaskDetailViewModel>() {
+        TaskDetailViewModelFactory((requireContext().applicationContext as TodoApplication).taskRepository)
+        //TaskDetailViewModelFactory(DefaultTasksRepository.getRepository(requireActivity().application))
+    }
+    
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         setupFab()
@@ -51,46 +57,46 @@ class TaskDetailFragment : Fragment() {
         setupNavigation()
         this.setupRefreshLayout(viewDataBinding.refreshLayout)
     }
-
+    
     private fun setupNavigation() {
         viewModel.deleteTaskEvent.observe(this, EventObserver {
-            val action = TaskDetailFragmentDirections
-                .actionTaskDetailFragmentToTasksFragment(DELETE_RESULT_OK)
+            val action = TaskDetailFragmentDirections.actionTaskDetailFragmentToTasksFragment(
+                        DELETE_RESULT_OK)
             findNavController().navigate(action)
         })
         viewModel.editTaskEvent.observe(this, EventObserver {
-            val action = TaskDetailFragmentDirections
-                .actionTaskDetailFragmentToAddEditTaskFragment(
-                    args.taskId,
-                    resources.getString(R.string.edit_task)
-                )
+            val action = TaskDetailFragmentDirections.actionTaskDetailFragmentToAddEditTaskFragment(
+                        args.taskId,
+                        resources.getString(R.string.edit_task))
             findNavController().navigate(action)
         })
     }
-
+    
     private fun setupFab() {
-        activity?.findViewById<View>(R.id.edit_task_fab)?.setOnClickListener {
-            viewModel.editTask()
-        }
+        activity?.findViewById<View>(R.id.edit_task_fab)
+            ?.setOnClickListener {
+                viewModel.editTask()
+            }
     }
-
+    
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.taskdetail_frag, container, false)
-        viewDataBinding = TaskdetailFragBinding.bind(view).apply {
-            viewmodel = viewModel
-        }
+        viewDataBinding = TaskdetailFragBinding.bind(view)
+            .apply {
+                viewmodel = viewModel
+            }
         viewDataBinding.lifecycleOwner = this.viewLifecycleOwner
-
+        
         viewModel.start(args.taskId)
-
+        
         setHasOptionsMenu(true)
         return view
     }
-
+    
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menu_delete -> {
@@ -100,7 +106,7 @@ class TaskDetailFragment : Fragment() {
             else -> false
         }
     }
-
+    
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.taskdetail_fragment_menu, menu)
     }
